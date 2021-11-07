@@ -63,7 +63,7 @@ static int _fmt_uint64(nanocbor_encoder_t *enc, uint64_t num, uint_least8_t type
             type |= NANOCBOR_SIZE_WORD;
             extrabytes = sizeof(uint32_t);
         }
-        else if (num > UINT8_MAX) {
+        else if (num > 255/* UINT8_MAX - C2000 does not define this*/ ) {
             type |= NANOCBOR_SIZE_SHORT;
             extrabytes = sizeof(uint16_t);
         }

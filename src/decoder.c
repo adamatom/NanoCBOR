@@ -205,8 +205,9 @@ static int _get_and_advance_int32(nanocbor_value_t *cvalue, int32_t *value, uint
 
 int nanocbor_get_int8(nanocbor_value_t *cvalue, int_least8_t *value)
 {
+#define C2000_INT8_MAX 127  // C2000 does not define INT8_MAX, because it doesnt implement int8_t
     int32_t tmp = 0;
-    int res = _get_and_advance_int32(cvalue, &tmp, NANOCBOR_SIZE_BYTE, INT8_MAX);
+    int res = _get_and_advance_int32(cvalue, &tmp, NANOCBOR_SIZE_BYTE, C2000_INT8_MAX);
 
     *value = (int_least8_t)tmp;
 
