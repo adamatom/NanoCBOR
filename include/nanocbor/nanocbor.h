@@ -145,10 +145,10 @@ typedef enum {
  * @brief decoder context
  */
 typedef struct nanocbor_value {
-    const uint8_t *cur;   /**< Current position in the buffer             */
-    const uint8_t *end;   /**< End of the buffer                          */
+    const uint_least8_t *cur;   /**< Current position in the buffer             */
+    const uint_least8_t *end;   /**< End of the buffer                          */
     uint32_t remaining;   /**< Number of items remaining in the container */
-    uint8_t flags;        /**< Flags for decoding hints                   */
+    uint_least8_t flags;        /**< Flags for decoding hints                   */
 } nanocbor_value_t;
 
 /**
@@ -231,7 +231,7 @@ typedef struct nanocbor_encoder {
  * @param[in]   len     Length in bytes of the buffer
  */
 void nanocbor_decoder_init(nanocbor_value_t *value,
-                           const uint8_t *buf, size_t len);
+                           const uint_least8_t *buf, size_t len);
 
 /**
  * @brief Retrieve the type of the CBOR value at the current position
@@ -254,7 +254,7 @@ int nanocbor_get_type(const nanocbor_value_t *value);
 bool nanocbor_at_end(const nanocbor_value_t *it);
 
 /**
- * @brief Retrieve a positive integer as uint8_t from the stream
+ * @brief Retrieve a positive integer as uint_least8_t from the stream
  *
  * If the value at `cvalue` is greater than 8 bit (> 255), error is returned.
  *
@@ -266,7 +266,7 @@ bool nanocbor_at_end(const nanocbor_value_t *it);
  * @return              number of bytes read
  * @return              negative on error
  */
-int nanocbor_get_uint8(nanocbor_value_t *cvalue, uint8_t *value);
+int nanocbor_get_uint8(nanocbor_value_t *cvalue, uint_least8_t *value);
 
 /**
  * @brief Retrieve a positive integer as uint16_t from the stream
@@ -299,7 +299,7 @@ int nanocbor_get_uint16(nanocbor_value_t *cvalue, uint16_t *value);
 int nanocbor_get_uint32(nanocbor_value_t *cvalue, uint32_t *value);
 
 /**
- * @brief Retrieve a signed integer as int8_t from the stream
+ * @brief Retrieve a signed integer as int_least8_t from the stream
  *
  * If the value at `cvalue` is greater than 8 bit (< -128 or > 127),
  * error is returned.
@@ -312,7 +312,7 @@ int nanocbor_get_uint32(nanocbor_value_t *cvalue, uint32_t *value);
  * @return              number of bytes read
  * @return              negative on error
  */
-int nanocbor_get_int8(nanocbor_value_t *cvalue, int8_t *value);
+int nanocbor_get_int8(nanocbor_value_t *cvalue, int_least8_t *value);
 
 /**
  * @brief Retrieve a signed integer as int16_t from the stream
@@ -375,7 +375,7 @@ int nanocbor_get_decimal_frac(nanocbor_value_t *cvalue, int32_t *e, int32_t *m);
  * @return              NANOCBOR_OK on success
  * @return              negative on error
  */
-int nanocbor_get_bstr(nanocbor_value_t *cvalue, const uint8_t **buf, size_t *len);
+int nanocbor_get_bstr(nanocbor_value_t *cvalue, const uint_least8_t **buf, size_t *len);
 
 /**
  * @brief Retrieve a text string from the stream
@@ -390,7 +390,7 @@ int nanocbor_get_bstr(nanocbor_value_t *cvalue, const uint8_t **buf, size_t *len
  * @return              NANOCBOR_OK on success
  * @return              negative on error
  */
-int nanocbor_get_tstr(nanocbor_value_t *cvalue, const uint8_t **buf, size_t *len);
+int nanocbor_get_tstr(nanocbor_value_t *cvalue, const uint_least8_t **buf, size_t *len);
 
 /**
  * @brief Search for a tstr key in a map.
@@ -519,7 +519,7 @@ int nanocbor_skip_simple(nanocbor_value_t *it);
  * @return              NANOCBOR_OK on success
  * @return              negative on error
  */
-int nanocbor_get_subcbor(nanocbor_value_t *it, const uint8_t **start,
+int nanocbor_get_subcbor(nanocbor_value_t *it, const uint_least8_t **start,
                          size_t *len);
 
 /**
@@ -685,7 +685,7 @@ int nanocbor_fmt_tstr(nanocbor_encoder_t *enc, size_t len);
  * @return              NANOCBOR_OK if the string fits
  * @return              Negative on error
  */
-int nanocbor_put_bstr(nanocbor_encoder_t *enc, const uint8_t *str, size_t len);
+int nanocbor_put_bstr(nanocbor_encoder_t *enc, const uint_least8_t *str, size_t len);
 
 /**
  * @brief Copy a text string with indicator into the encoder buffer

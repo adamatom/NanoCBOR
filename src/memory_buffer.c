@@ -5,7 +5,7 @@
 #include "nanocbor/stream_encoders/memory_buffer.h"
 #include <string.h>
 
-void MemoryStream_Init(memory_encoder *self, uint8_t *buf, size_t len)
+void MemoryStream_Init(memory_encoder *self, uint_least8_t *buf, size_t len)
 {
     self->len = 0;
     self->cur = buf;

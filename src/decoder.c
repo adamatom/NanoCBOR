@@ -24,7 +24,7 @@
 
 
 void nanocbor_decoder_init(nanocbor_value_t *value,
-                           const uint8_t *buf, size_t len)
+                           const uint_least8_t *buf, size_t len)
 {
     value->cur = buf;
     value->end = buf + len;
@@ -50,12 +50,12 @@ static inline bool _over_end(const nanocbor_value_t *it)
     return it->cur >= it->end;
 }
 
-static inline uint8_t _get_type(const nanocbor_value_t *value)
+static inline uint_least8_t _get_type(const nanocbor_value_t *value)
 {
     return (*value->cur & NANOCBOR_TYPE_MASK);
 }
 
-static int _value_match_exact(nanocbor_value_t *cvalue, uint8_t val)
+static int _value_match_exact(nanocbor_value_t *cvalue, uint_least8_t val)
 {
     int res = NANOCBOR_ERR_INVALID_TYPE;
 
@@ -93,7 +93,7 @@ int nanocbor_get_type(const nanocbor_value_t *value)
     return (_get_type(value) >> NANOCBOR_TYPE_OFFSET);
 }
 
-static int _get_uint64(const nanocbor_value_t *cvalue, uint32_t *value, uint8_t max, int type)
+static int _get_uint64(const nanocbor_value_t *cvalue, uint32_t *value, uint_least8_t max, int type)
 {
     int ctype = nanocbor_get_type(cvalue);
 
@@ -122,7 +122,7 @@ static int _get_uint64(const nanocbor_value_t *cvalue, uint32_t *value, uint8_t 
     }
     uint64_t tmp = 0;
     /* Copy the value from cbor to the least significant bytes */
-    memcpy(((uint8_t *)&tmp) + sizeof(uint64_t) - bytes, cvalue->cur + 1U, bytes);
+    memcpy(((uint_least8_t *)&tmp) + sizeof(uint64_t) - bytes, cvalue->cur + 1U, bytes);
     /* NOLINTNEXTLINE: user supplied function */
     tmp = NANOCBOR_BE64TOH_FUNC(tmp);
     *value = 0;
@@ -131,13 +131,13 @@ static int _get_uint64(const nanocbor_value_t *cvalue, uint32_t *value, uint8_t 
     return (int)(1 + bytes);
 }
 
-static int _get_and_advance_uint8(nanocbor_value_t *cvalue, uint8_t *value,
+static int _get_and_advance_uint8(nanocbor_value_t *cvalue, uint_least8_t *value,
                                    int type)
 {
     uint32_t tmp = 0;
     int res = _get_uint64(cvalue, &tmp, NANOCBOR_SIZE_BYTE,
                           type);
-    *value = (uint8_t)tmp;
+    *value = (uint_least8_t)tmp;
 
     return _advance_if(cvalue, res);
 }
@@ -164,7 +164,7 @@ static int _get_and_advance_uint32(nanocbor_value_t *cvalue, uint32_t *value,
     return _advance_if(cvalue, res);
 }
 
-int nanocbor_get_uint8(nanocbor_value_t *cvalue, uint8_t *value)
+int nanocbor_get_uint8(nanocbor_value_t *cvalue, uint_least8_t *value)
 {
     return _get_and_advance_uint8(cvalue, value, NANOCBOR_TYPE_UINT);
 }
@@ -179,7 +179,7 @@ int nanocbor_get_uint32(nanocbor_value_t *cvalue, uint32_t *value)
     return _get_and_advance_uint32(cvalue, value, NANOCBOR_TYPE_UINT);
 }
 
-static int _get_and_advance_int32(nanocbor_value_t *cvalue, int32_t *value, uint8_t max,
+static int _get_and_advance_int32(nanocbor_value_t *cvalue, int32_t *value, uint_least8_t max,
                                   uint32_t bound)
 {
     int type = nanocbor_get_type(cvalue);
@@ -203,12 +203,12 @@ static int _get_and_advance_int32(nanocbor_value_t *cvalue, int32_t *value, uint
     return _advance_if(cvalue, res);
 }
 
-int nanocbor_get_int8(nanocbor_value_t *cvalue, int8_t *value)
+int nanocbor_get_int8(nanocbor_value_t *cvalue, int_least8_t *value)
 {
     int32_t tmp = 0;
     int res = _get_and_advance_int32(cvalue, &tmp, NANOCBOR_SIZE_BYTE, INT8_MAX);
 
-    *value = (int8_t)tmp;
+    *value = (int_least8_t)tmp;
 
     return res;
 }
@@ -263,7 +263,7 @@ int nanocbor_get_decimal_frac(nanocbor_value_t *cvalue, int32_t *e, int32_t *m)
     return res;
 }
 
-static int _get_str(nanocbor_value_t *cvalue, const uint8_t **buf, size_t *len, uint8_t type)
+static int _get_str(nanocbor_value_t *cvalue, const uint_least8_t **buf, size_t *len, uint_least8_t type)
 {
     *len = 0;
     int res = _get_uint64(cvalue, (uint32_t*)len, NANOCBOR_SIZE_SIZET, type);
@@ -279,12 +279,12 @@ static int _get_str(nanocbor_value_t *cvalue, const uint8_t **buf, size_t *len, 
     return res;
 }
 
-int nanocbor_get_bstr(nanocbor_value_t *cvalue, const uint8_t **buf, size_t *len)
+int nanocbor_get_bstr(nanocbor_value_t *cvalue, const uint_least8_t **buf, size_t *len)
 {
     return _get_str(cvalue, buf, len, NANOCBOR_TYPE_BSTR);
 }
 
-int nanocbor_get_tstr(nanocbor_value_t *cvalue, const uint8_t **buf, size_t *len)
+int nanocbor_get_tstr(nanocbor_value_t *cvalue, const uint_least8_t **buf, size_t *len)
 {
     return _get_str(cvalue, buf, len, NANOCBOR_TYPE_TSTR);
 }
@@ -306,12 +306,12 @@ int nanocbor_get_bool(nanocbor_value_t *cvalue, bool *value)
 }
 
 static int _enter_container(const nanocbor_value_t *it, nanocbor_value_t *container,
-                     uint8_t type)
+                     uint_least8_t type)
 {
     container->end = it->end;
     container->remaining = 0;
 
-    uint8_t value_match = (uint8_t)(((unsigned)type << NANOCBOR_TYPE_OFFSET) | NANOCBOR_SIZE_INDEFINITE);
+    uint_least8_t value_match = (uint_least8_t)(((unsigned)type << NANOCBOR_TYPE_OFFSET) | NANOCBOR_SIZE_INDEFINITE);
 
     /* Not using _value_match_exact here to keep *it const */
     if (!_over_end(it) && *it->cur == value_match) {
@@ -368,7 +368,7 @@ static int _skip_simple(nanocbor_value_t *it)
     return _advance_if(it, res);
 }
 
-int nanocbor_get_subcbor(nanocbor_value_t *it, const uint8_t **start,
+int nanocbor_get_subcbor(nanocbor_value_t *it, const uint_least8_t **start,
                          size_t *len)
 {
     *start = it->cur;
@@ -383,7 +383,7 @@ int nanocbor_skip_simple(nanocbor_value_t *it)
 }
 
 /* NOLINTNEXTLINE(misc-no-recursion): Recursion is limited by design */
-static int _skip_limited(nanocbor_value_t *it, uint8_t limit)
+static int _skip_limited(nanocbor_value_t *it, uint_least8_t limit)
 {
     if (limit == 0) {
         return NANOCBOR_ERR_RECURSION;
@@ -392,9 +392,9 @@ static int _skip_limited(nanocbor_value_t *it, uint8_t limit)
     int res = type;
 
     if (type == NANOCBOR_TYPE_BSTR || type == NANOCBOR_TYPE_TSTR) {
-        const uint8_t *tmp = NULL;
+        const uint_least8_t *tmp = NULL;
         size_t len = 0;
-        res = _get_str(it, &tmp, &len, (uint8_t)type);
+        res = _get_str(it, &tmp, &len, (uint_least8_t)type);
     }
     /* map or array */
     else if (type == NANOCBOR_TYPE_ARR || type == NANOCBOR_TYPE_MAP) {
@@ -431,7 +431,7 @@ int nanocbor_get_key_tstr(nanocbor_value_t *start, const char *key,
     *value = *start;
 
     while (!nanocbor_at_end(value)) {
-        const uint8_t *s = NULL;
+        const uint_least8_t *s = NULL;
         size_t s_len = 0;
 
         if ((res = nanocbor_get_tstr(value, &s, &s_len)) < 0) {

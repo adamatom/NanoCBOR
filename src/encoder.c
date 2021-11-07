@@ -27,7 +27,7 @@ size_t nanocbor_encoded_len(nanocbor_encoder_t *enc)
     return enc->len(enc->stream);
 }
 
-static int _fmt_single(nanocbor_encoder_t *enc, uint8_t single)
+static int _fmt_single(nanocbor_encoder_t *enc, uint_least8_t single)
 {
     const int res = enc->reserve(enc->stream, 1);
 
@@ -39,13 +39,13 @@ static int _fmt_single(nanocbor_encoder_t *enc, uint8_t single)
 
 int nanocbor_fmt_bool(nanocbor_encoder_t *enc, bool content)
 {
-    uint8_t single = NANOCBOR_MASK_FLOAT | (content ? NANOCBOR_SIMPLE_TRUE
+    uint_least8_t single = NANOCBOR_MASK_FLOAT | (content ? NANOCBOR_SIMPLE_TRUE
                                             : NANOCBOR_SIMPLE_FALSE);
 
     return _fmt_single(enc, single);
 }
 
-static int _fmt_uint64(nanocbor_encoder_t *enc, uint64_t num, uint8_t type)
+static int _fmt_uint64(nanocbor_encoder_t *enc, uint64_t num, uint_least8_t type)
 {
     unsigned extrabytes = 0;
 
@@ -69,7 +69,9 @@ static int _fmt_uint64(nanocbor_encoder_t *enc, uint64_t num, uint8_t type)
         }
         else {
             type |= NANOCBOR_SIZE_BYTE;
-            extrabytes = sizeof(uint8_t);
+            // C2000 doesn't have a uint8_t, and sizeof(uint_least8_t) == 1,
+            // and CBOR specification is sizeof(uint8_t).
+            extrabytes = 1;
         }
     }
     int res = enc->reserve(enc->stream, extrabytes + 1);
@@ -80,7 +82,7 @@ static int _fmt_uint64(nanocbor_encoder_t *enc, uint64_t num, uint8_t type)
         uint64_t benum = NANOCBOR_HTOBE64_FUNC(num);
 
         enc->insert(enc->stream,
-                (uint8_t *)&benum + sizeof(benum) - extrabytes,
+                (uint_least8_t *)&benum + sizeof(benum) - extrabytes,
                 extrabytes);
     }
     return res;
@@ -130,7 +132,7 @@ int nanocbor_fmt_tstr(nanocbor_encoder_t *enc, size_t len)
     return _fmt_uint64(enc, (uint64_t)len, NANOCBOR_MASK_TSTR);
 }
 
-static int _put_bytes(nanocbor_encoder_t *enc, const uint8_t *str, size_t len)
+static int _put_bytes(nanocbor_encoder_t *enc, const uint_least8_t *str, size_t len)
 {
     const int res = enc->reserve(enc->stream, len);
 
@@ -146,16 +148,16 @@ int nanocbor_put_tstr(nanocbor_encoder_t *enc, const char *str)
     size_t len = strlen(str);
 
     nanocbor_fmt_tstr(enc, len);
-    return _put_bytes(enc, (const uint8_t *)str, len);
+    return _put_bytes(enc, (const uint_least8_t *)str, len);
 }
 
 int nanocbor_put_tstrn(nanocbor_encoder_t *enc, const char *str, size_t len)
 {
     nanocbor_fmt_tstr(enc, len);
-    return _put_bytes(enc, (const uint8_t *)str, len);
+    return _put_bytes(enc, (const uint_least8_t *)str, len);
 }
 
-int nanocbor_put_bstr(nanocbor_encoder_t *enc, const uint8_t *str, size_t len)
+int nanocbor_put_bstr(nanocbor_encoder_t *enc, const uint_least8_t *str, size_t len)
 {
     nanocbor_fmt_bstr(enc, len);
     return _put_bytes(enc, str, len);
@@ -227,7 +229,7 @@ int nanocbor_fmt_null(nanocbor_encoder_t *enc)
 #define HALF_MASK_HALF                                    (0xFFU)
 
 /* Check special cases for single precision floats */
-static bool _single_is_inf_nan(uint8_t exp)
+static bool _single_is_inf_nan(uint_least8_t exp)
 {
     return exp == FLOAT_EXP_IS_NAN;
 }
@@ -237,7 +239,7 @@ static bool _single_is_zero(uint32_t num)
     return (num & FLOAT_IS_ZERO) == 0;
 }
 
-static bool _single_in_range(uint8_t exp, uint32_t num)
+static bool _single_in_range(uint_least8_t exp, uint32_t num)
 {
     /* Check if lower 13 bits of fraction are zero, if so we might be able to
      * convert without precision loss */
@@ -253,9 +255,9 @@ static int _fmt_halffloat(nanocbor_encoder_t *enc, uint16_t half)
 {
     int res = enc->reserve(enc->stream, sizeof(uint16_t) + 1);
     if (res > 0) {
-        const uint8_t id = NANOCBOR_MASK_FLOAT | NANOCBOR_SIZE_SHORT;
-        const uint8_t part1 = (half >> HALF_SIZE/2);
-        const uint8_t part2 = half & HALF_MASK_HALF;
+        const uint_least8_t id = NANOCBOR_MASK_FLOAT | NANOCBOR_SIZE_SHORT;
+        const uint_least8_t part1 = (half >> HALF_SIZE/2);
+        const uint_least8_t part2 = half & HALF_MASK_HALF;
 
         enc->insert(enc->stream, &id, 1);
         enc->insert(enc->stream, &part1, 1);
@@ -295,7 +297,7 @@ int nanocbor_fmt_float(nanocbor_encoder_t *enc, float num)
     uint32_t *unum = (uint32_t *)&num;
 
     /* Retrieve exponent */
-    uint8_t exp = (*unum >> FLOAT_EXP_POS) & FLOAT_EXP_MASK;
+    uint_least8_t exp = (*unum >> FLOAT_EXP_POS) & FLOAT_EXP_MASK;
     if (_single_is_inf_nan(exp) ||
             _single_is_zero(*unum) ||
             _single_in_range(exp, *unum)) {
@@ -303,7 +305,7 @@ int nanocbor_fmt_float(nanocbor_encoder_t *enc, float num)
         uint16_t half = ((*unum >> (FLOAT_SIZE - HALF_SIZE)) & HALF_SIGN_MASK);
         /* Shift exponent */
         if (exp != FLOAT_EXP_IS_NAN && exp != 0) {
-            exp = exp + (uint8_t)(HALF_EXP_OFFSET - FLOAT_EXP_OFFSET);
+            exp = exp + (uint_least8_t)(HALF_EXP_OFFSET - FLOAT_EXP_OFFSET);
         }
         /* Add exponent */
         half |= ((exp & HALF_EXP_MASK) << HALF_EXP_POS) |
@@ -313,7 +315,7 @@ int nanocbor_fmt_float(nanocbor_encoder_t *enc, float num)
     /* normal float */
     int res = enc->reserve(enc->stream, 1 + sizeof(float));
     if (res > 0) {
-        const uint8_t id = NANOCBOR_MASK_FLOAT | NANOCBOR_SIZE_WORD;
+        const uint_least8_t id = NANOCBOR_MASK_FLOAT | NANOCBOR_SIZE_WORD;
 
         /* NOLINTNEXTLINE: user supplied function */
         const uint32_t bnum = NANOCBOR_HTOBE32_FUNC(*unum);
@@ -344,7 +346,7 @@ int nanocbor_fmt_double(nanocbor_encoder_t *enc, double num)
     }
     int res = enc->reserve(enc->stream, 1 + sizeof(double));
     if (res > 0) {
-        const uint8_t id = NANOCBOR_MASK_FLOAT | NANOCBOR_SIZE_LONG;
+        const uint_least8_t id = NANOCBOR_MASK_FLOAT | NANOCBOR_SIZE_LONG;
 
         /* NOLINTNEXTLINE: user supplied function */
         uint64_t bnum = NANOCBOR_HTOBE64_FUNC(*unum);

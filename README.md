@@ -24,7 +24,7 @@ nanocbor_value_t decoder;
 nanocbor_decoder_init(&decoder, buffer, buffer_len);
 ```
 
-Where `buffer` is an `const uint8_t` array containing an CBOR structure.
+Where `buffer` is an `const uint_least8_t` array containing an CBOR structure.
 
 To decode an `int32_t` from a cbor structure and bail out if the element is not of the integer type:
 
@@ -91,7 +91,7 @@ memory buffer that it can `memcpy` CBOR data into.
 Construction of these objects looks like:
 
 ```
-uint8_t buf[64];
+uint_least8_t buf[64];
 memory_encoder stream;
 MemoryStream_Init(&stream, buf, sizeof(buf));
 
@@ -154,7 +154,7 @@ int Stdout_Reserve(stdout_stream *self, size_t len) {
 }
 
 void Stdout_Insert(stdout_stream *self, const void *src, size_t n) {
-  const uint8_t *bytes = (const uint8_t *)src;
+  const uint_least8_t *bytes = (const uint_least8_t *)src;
   for (size_t i = 0; i < n; ++i) {
     printf("%02X ", bytes[i]);
   }
