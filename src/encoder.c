@@ -48,43 +48,54 @@ int nanocbor_fmt_bool(nanocbor_encoder_t *enc, bool content)
 static int _fmt_uint64(nanocbor_encoder_t *enc, uint64_t num, uint_least8_t type)
 {
     unsigned extrabytes = 0;
+    uint_least8_t buf[8];
 
     if (num < NANOCBOR_SIZE_BYTE) {
         type |= num;
-    }
-    else {
+    } else {
         if (num > UINT32_MAX) {
             /* Requires long size */
             type |= NANOCBOR_SIZE_LONG;
-            extrabytes = sizeof(uint64_t);
-        }
-        else if (num > UINT16_MAX) {
+            /* The exact size is known using sizeof() breaks arches that aren't 8-bit words */
+            extrabytes = 8;
+            buf[0] = (num & 0xff00000000000000ull) >> 56;
+            buf[1] = (num & 0x00ff000000000000ull) >> 48;
+            buf[2] = (num & 0x0000ff0000000000ull) >> 40;
+            buf[3] = (num & 0x000000ff00000000ull) >> 32;
+            buf[4] = (num & 0x00000000ff000000ull) >> 24;
+            buf[5] = (num & 0x0000000000ff0000ull) >> 16;
+            buf[6] = (num & 0x000000000000ff00ull) >> 8;
+            buf[7] = (num & 0x00000000000000ffull);
+        } else if (num > UINT16_MAX) {
             /* At least word size */
             type |= NANOCBOR_SIZE_WORD;
-            extrabytes = sizeof(uint32_t);
-        }
-        else if (num > 255/* UINT8_MAX - C2000 does not define this*/ ) {
+            /* The exact size is known using sizeof() breaks arches that aren't 8-bit words */
+            extrabytes = 4;
+            buf[0] = (num & 0x00000000ff000000ull) >> 24;
+            buf[1] = (num & 0x0000000000ff0000ull) >> 16;
+            buf[2] = (num & 0x000000000000ff00ull) >> 8;
+            buf[3] = (num & 0x00000000000000ffull);
+        } else if (num > 255/* UINT8_MAX - C2000 does not define this*/) {
             type |= NANOCBOR_SIZE_SHORT;
-            extrabytes = sizeof(uint16_t);
-        }
-        else {
+            /* The exact size is known using sizeof() breaks arches that aren't 8-bit words */
+            extrabytes = 2;
+            buf[0] = (num & 0x000000000000ff00ull) >> 8;
+            buf[1] = (num & 0x00000000000000ffull);
+        } else {
             type |= NANOCBOR_SIZE_BYTE;
-            // C2000 doesn't have a uint8_t, and sizeof(uint_least8_t) == 1,
-            // and CBOR specification is sizeof(uint8_t).
+            /* The exact size is known using sizeof() breaks arches that aren't 8-bit words */
             extrabytes = 1;
+            buf[0] = (num & 0x00000000000000ffull);
         }
     }
+
     int res = enc->reserve(enc->stream, extrabytes + 1);
+
     if (res > 0) {
         enc->insert(enc->stream, &type, 1);
-
-        /* NOLINTNEXTLINE: user supplied function */
-        uint64_t benum = NANOCBOR_HTOBE64_FUNC(num);
-
-        enc->insert(enc->stream,
-                (uint_least8_t *)&benum + sizeof(benum) - extrabytes,
-                extrabytes);
+        enc->insert(enc->stream, buf, extrabytes);
     }
+
     return res;
 }
 
