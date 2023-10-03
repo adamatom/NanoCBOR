@@ -85,7 +85,7 @@ bool nanocbor_at_end(const nanocbor_value_t *it)
     return end;
 }
 
-int nanocbor_get_type(const nanocbor_value_t *value)
+size_t nanocbor_get_type(const nanocbor_value_t *value)
 {
     if (nanocbor_at_end(value)) {
         return NANOCBOR_ERR_END;
