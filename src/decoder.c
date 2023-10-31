@@ -85,7 +85,7 @@ bool nanocbor_at_end(const nanocbor_value_t *it)
     return end;
 }
 
-int nanocbor_get_type(const nanocbor_value_t *value)
+size_t nanocbor_get_type(const nanocbor_value_t *value)
 {
     if (nanocbor_at_end(value)) {
         return NANOCBOR_ERR_END;
@@ -121,12 +121,14 @@ static int _get_uint64(const nanocbor_value_t *cvalue, uint32_t *value, uint_lea
         return NANOCBOR_ERR_END;
     }
     uint64_t tmp = 0;
+    uint_fast64_t val64;
     /* Copy the value from cbor to the least significant bytes */
-    memcpy(((uint_least8_t *)&tmp) + sizeof(uint64_t) - bytes, cvalue->cur + 1U, bytes);
-    /* NOLINTNEXTLINE: user supplied function */
-    tmp = NANOCBOR_BE64TOH_FUNC(tmp);
-    *value = 0;
-    memcpy(value, &tmp, bytes);
+    /* for-loop to handle excotic cpu arthitectures, eg. no 8-bit support*/
+    for (uint_fast8_t i = 0; i < bytes; i++) {
+        val64 = 0x00000000000000ffull & *((uint_fast8_t*)(cvalue->cur + 1 + i));
+        tmp |= ( val64<<(8 * (bytes - i - 1)) );
+    }
+    *value = tmp;
 
     return (int)(1 + bytes);
 }
